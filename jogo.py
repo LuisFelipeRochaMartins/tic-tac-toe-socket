@@ -2,10 +2,8 @@ import pygame
 import socket
 import argparse
 import pickle
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-import time
 import sys
 
 WIDTH, HEIGHT = 600, 600
@@ -32,25 +30,21 @@ class Network:
             if is_server:
                 self.sock.bind((host, PORT))
                 self.sock.listen(1)
-                print(f"Server started. Waiting for connection on {host}:{PORT}...")
+                print(f"Servidor iniciado. Esperando conexão em: {host}:{PORT}...")
                 self.conn, addr = self.sock.accept()
-                print(f"Connected by {addr}")
+                print(f"Conectado no {addr}")
             else:
-                print(f"Attempting to connect to server at {host}:{PORT}...")
+                print(f"Tentando conectar ao servidor {host}:{PORT}...")
                 self.sock.connect((host, PORT))
                 self.conn = self.sock
-                print(f"Successfully connected to server {host}:{PORT}")
+                print(f"Conectou com sucesso ao servidor {host}:{PORT}")
             
             self.queue = Queue()
             self.executor = ThreadPoolExecutor(max_workers=1)
             self.executor.submit(self._receive_loop)
             
         except socket.error as e:
-            print(f"Network error: {e}")
-            print("Check that:")
-            print("1. The server is running if you're trying to connect as a client")
-            print("2. The IP address is correct (use the server's actual IP, not 'localhost' for remote connections)")
-            print("3. Port 5555 is not blocked by a firewall")
+            print(f"Erro de Rede: {e}")
             sys.exit(1)
 
     def send(self, data):
@@ -58,7 +52,7 @@ class Network:
             packet = pickle.dumps(data)
             self.conn.sendall(packet)
         except (socket.error, BrokenPipeError) as e:
-            print(f"Send error: {e}")
+            print(f"Erro: {e}")
             sys.exit(1)
 
     def receive(self, timeout=None):
@@ -79,7 +73,7 @@ class Network:
             except Exception as e:
                 print(f"Receive error: {e}")
                 break
-        print("Connection lost")
+        print("Conexão perdida")
         sys.exit(1)
 
 def draw_lines(screen):
@@ -110,16 +104,16 @@ def draw_game_status(screen, is_my_turn, winner, mark):
     
     if winner:
         if winner == 'Draw':
-            text = font.render("Game ended in a Draw!", True, (255, 255, 255))
+            text = font.render("Empate!", True, (255, 255, 255))
         elif winner == mark:
-            text = font.render("You Won!", True, (255, 255, 255))
+            text = font.render("Você Ganhou!", True, (255, 255, 255))
         else:
-            text = font.render("You Lost!", True, (255, 255, 255))
+            text = font.render("Você Perdeu!", True, (255, 255, 255))
     else:
         if is_my_turn:
-            text = font.render(f"Your turn (You are {mark})", True, (255, 255, 255))
+            text = font.render(f"Sua Vez (Você é {mark})", True, (255, 255, 255))
         else:
-            text = font.render("Waiting for opponent...", True, (255, 255, 255))
+            text = font.render("Esperando oponente...", True, (255, 255, 255))
     
     screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT + 25))
 
@@ -155,7 +149,7 @@ def main():
     try:
         net = Network(args.host, is_server=args.server)
     except Exception as e:
-        print(f"Failed to initialize network: {e}")
+        print(f"Erro ao iniciar a rede: {e}")
         pygame.quit()
         return
 
@@ -187,7 +181,7 @@ def main():
                         is_my_turn = False
                         winner = check_winner(board)
                         if winner:
-                            print(f"Game over: {winner}")
+                            print(f"Fim de Jogo: {winner}")
 
         data = net.receive(timeout=0.01)
         if data and not is_my_turn and winner is None:
@@ -196,7 +190,7 @@ def main():
             is_my_turn = True
             winner = check_winner(board)
             if winner:
-                print(f"Game over: {winner}")
+                print(f"Fim de Jogo: {winner}")
 
         screen.fill(BG_COLOR)
         draw_lines(screen)
